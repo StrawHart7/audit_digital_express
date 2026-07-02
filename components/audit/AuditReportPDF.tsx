@@ -1,6 +1,12 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { AuditResult, BadgeStatus } from "@/types/audit";
-import { badgeLabel, booleanStatus, loadTimeStatus, scoreStatus } from "@/lib/scoring";
+import {
+  badgeLabel,
+  booleanStatus,
+  loadTimeStatus,
+  scoreStatus,
+  mobileFriendlyStatus,
+} from "@/lib/scoring";
 import { generateRecommendations } from "@/lib/recommendations";
 
 const COLORS = {
@@ -17,10 +23,16 @@ const statusColor: Record<BadgeStatus, string> = {
   green: COLORS.green,
   orange: COLORS.orange,
   red: COLORS.red,
+  unknown: "#9CA3AF",
 };
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, color: COLORS.navy, fontFamily: "Helvetica" },
+  page: {
+    padding: 40,
+    fontSize: 10,
+    color: COLORS.navy,
+    fontFamily: "Helvetica",
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -33,7 +45,12 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 9, color: COLORS.muted },
   metaBlock: { marginBottom: 18 },
   title: { fontSize: 16, fontWeight: 700, marginBottom: 4 },
-  sectionTitle: { fontSize: 12, fontWeight: 700, marginBottom: 10, marginTop: 4 },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    marginBottom: 10,
+    marginTop: 4,
+  },
   grid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
   card: {
     width: "31.3%",
@@ -55,7 +72,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   recoItem: { marginBottom: 10 },
-  recoTitle: { fontSize: 10, fontWeight: 700, color: COLORS.brand, marginBottom: 2 },
+  recoTitle: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: COLORS.brand,
+    marginBottom: 2,
+  },
   recoDesc: { fontSize: 9, color: COLORS.muted, lineHeight: 1.4 },
   footer: {
     position: "absolute",
@@ -72,7 +94,11 @@ const styles = StyleSheet.create({
 });
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
 }
 
 export default function AuditReportPDF({ result }: { result: AuditResult }) {
@@ -80,11 +106,36 @@ export default function AuditReportPDF({ result }: { result: AuditResult }) {
   const recommendations = generateRecommendations(metrics);
 
   const cards = [
-    { label: "Performance Score", value: `${metrics.performanceScore}`, status: scoreStatus(metrics.performanceScore) },
-    { label: "HTTPS Active", value: metrics.httpsActive ? "Yes" : "No", status: booleanStatus(metrics.httpsActive) },
-    { label: "Mobile-Friendly", value: metrics.mobileFriendly ? "Yes" : "No", status: booleanStatus(metrics.mobileFriendly) },
-    { label: "Page Load Time", value: `${metrics.loadTimeSeconds.toFixed(1)}s`, status: loadTimeStatus(metrics.loadTimeSeconds) },
-    { label: "SEO Score", value: `${metrics.seoScore}`, status: scoreStatus(metrics.seoScore) },
+    {
+      label: "Performance Score",
+      value: `${metrics.performanceScore}`,
+      status: scoreStatus(metrics.performanceScore),
+    },
+    {
+      label: "HTTPS Active",
+      value: metrics.httpsActive ? "Yes" : "No",
+      status: booleanStatus(metrics.httpsActive),
+    },
+    {
+      label: "Mobile-Friendly",
+      value:
+        metrics.mobileFriendly === null
+          ? "Unknown"
+          : metrics.mobileFriendly
+            ? "Yes"
+            : "No",
+      status: mobileFriendlyStatus(metrics.mobileFriendly),
+    },
+    {
+      label: "Page Load Time",
+      value: `${metrics.loadTimeSeconds.toFixed(1)}s`,
+      status: loadTimeStatus(metrics.loadTimeSeconds),
+    },
+    {
+      label: "SEO Score",
+      value: `${metrics.seoScore}`,
+      status: scoreStatus(metrics.seoScore),
+    },
   ];
 
   return (
@@ -92,7 +143,9 @@ export default function AuditReportPDF({ result }: { result: AuditResult }) {
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.brandName}>Audit Digital Express</Text>
-          <Text style={styles.subtitle}>Generated {formatDate(result.auditDate)}</Text>
+          <Text style={styles.subtitle}>
+            Generated {formatDate(result.auditDate)}
+          </Text>
         </View>
 
         <View style={styles.metaBlock}>
@@ -106,7 +159,12 @@ export default function AuditReportPDF({ result }: { result: AuditResult }) {
             <View key={card.label} style={styles.card}>
               <Text style={styles.cardLabel}>{card.label}</Text>
               <Text style={styles.cardValue}>{card.value}</Text>
-              <Text style={{ ...styles.badge, backgroundColor: statusColor[card.status] }}>
+              <Text
+                style={{
+                  ...styles.badge,
+                  backgroundColor: statusColor[card.status],
+                }}
+              >
                 {badgeLabel[card.status]}
               </Text>
             </View>
@@ -122,8 +180,14 @@ export default function AuditReportPDF({ result }: { result: AuditResult }) {
         ))}
 
         <View style={styles.footer} fixed>
-          <Text>Audit Digital Express — agency-grade audits, generated in seconds.</Text>
-          <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+          <Text>
+            Audit Digital Express — agency-grade audits, generated in seconds.
+          </Text>
+          <Text
+            render={({ pageNumber, totalPages }) =>
+              `${pageNumber} / ${totalPages}`
+            }
+          />
         </View>
       </Page>
     </Document>

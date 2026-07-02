@@ -1,9 +1,5 @@
 import { AuditMetrics, Recommendation } from "@/types/audit";
 
-/**
- * Builds the recommendations list dynamically from the actual audit metrics.
- * Every entry is conditional on the real numbers coming back from PageSpeed.
- */
 export function generateRecommendations(metrics: AuditMetrics): Recommendation[] {
   const recs: Recommendation[] = [];
 
@@ -16,12 +12,19 @@ export function generateRecommendations(metrics: AuditMetrics): Recommendation[]
     });
   }
 
-  if (!metrics.mobileFriendly) {
+  if (metrics.mobileFriendly === false) {
     recs.push({
       id: "mobile",
       title: "Fix Mobile Viewport",
       description:
         "Your page is missing a proper responsive viewport configuration. Add a meta viewport tag so the layout adapts correctly on phones and tablets.",
+    });
+  } else if (metrics.mobileFriendly === null) {
+    recs.push({
+      id: "mobile-unknown",
+      title: "Verify Mobile Viewport Manually",
+      description:
+        "We couldn't automatically confirm the mobile viewport configuration — the site may be blocking automated checks. Verify manually on a phone or with Chrome DevTools' device toolbar.",
     });
   }
 

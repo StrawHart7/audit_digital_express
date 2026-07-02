@@ -1,10 +1,10 @@
-export type BadgeStatus = "green" | "orange" | "red";
+export type BadgeStatus = "green" | "orange" | "red" | "unknown";
 
 export interface AuditMetrics {
   performanceScore: number; // 0-100
   seoScore: number; // 0-100
   httpsActive: boolean;
-  mobileFriendly: boolean;
+  mobileFriendly: boolean | null;
   /** Lab data (First Contentful Paint), in seconds — not CrUX field data. */
   loadTimeSeconds: number;
 }

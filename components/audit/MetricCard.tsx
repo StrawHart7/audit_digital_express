@@ -6,6 +6,7 @@ const statusBg: Record<BadgeStatus, string> = {
   green: "bg-status-green",
   orange: "bg-status-orange",
   red: "bg-status-red",
+  unknown: "bg-status-unknown",
 };
 
 interface MetricCardProps {

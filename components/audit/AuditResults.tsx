@@ -2,7 +2,12 @@
 
 import { Download, Lock, Search, Smartphone, Timer, Zap } from "lucide-react";
 import { AuditResult } from "@/types/audit";
-import { booleanStatus, loadTimeStatus, scoreStatus } from "@/lib/scoring";
+import {
+  booleanStatus,
+  loadTimeStatus,
+  scoreStatus,
+  mobileFriendlyStatus,
+} from "@/lib/scoring";
 import { generateRecommendations } from "@/lib/recommendations";
 import MetricCard from "./MetricCard";
 import BadgeLegend from "./BadgeLegend";
@@ -22,7 +27,11 @@ function formatDate(iso: string) {
   });
 }
 
-export default function AuditResults({ result, onDownloadPdf, isGeneratingPdf }: AuditResultsProps) {
+export default function AuditResults({
+  result,
+  onDownloadPdf,
+  isGeneratingPdf,
+}: AuditResultsProps) {
   const { metrics } = result;
   const recommendations = generateRecommendations(metrics);
 
@@ -46,11 +55,42 @@ export default function AuditResults({ result, onDownloadPdf, isGeneratingPdf }:
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MetricCard icon={Zap} label="Performance Score" value={`${metrics.performanceScore}`} status={scoreStatus(metrics.performanceScore)} />
-        <MetricCard icon={Lock} label="HTTPS Active" value={metrics.httpsActive ? "Yes" : "No"} status={booleanStatus(metrics.httpsActive)} />
-        <MetricCard icon={Smartphone} label="Mobile-Friendly" value={metrics.mobileFriendly ? "Yes" : "No"} status={booleanStatus(metrics.mobileFriendly)} />
-        <MetricCard icon={Timer} label="Page Load Time" value={`${metrics.loadTimeSeconds.toFixed(1)}s`} status={loadTimeStatus(metrics.loadTimeSeconds)} />
-        <MetricCard icon={Search} label="SEO Score" value={`${metrics.seoScore}`} status={scoreStatus(metrics.seoScore)} />
+        <MetricCard
+          icon={Zap}
+          label="Performance Score"
+          value={`${metrics.performanceScore}`}
+          status={scoreStatus(metrics.performanceScore)}
+        />
+        <MetricCard
+          icon={Lock}
+          label="HTTPS Active"
+          value={metrics.httpsActive ? "Yes" : "No"}
+          status={booleanStatus(metrics.httpsActive)}
+        />
+        <MetricCard
+          icon={Smartphone}
+          label="Mobile-Friendly"
+          value={
+            metrics.mobileFriendly === null
+              ? "Unknown"
+              : metrics.mobileFriendly
+                ? "Yes"
+                : "No"
+          }
+          status={mobileFriendlyStatus(metrics.mobileFriendly)}
+        />{" "}
+        <MetricCard
+          icon={Timer}
+          label="Page Load Time"
+          value={`${metrics.loadTimeSeconds.toFixed(1)}s`}
+          status={loadTimeStatus(metrics.loadTimeSeconds)}
+        />
+        <MetricCard
+          icon={Search}
+          label="SEO Score"
+          value={`${metrics.seoScore}`}
+          status={scoreStatus(metrics.seoScore)}
+        />
         <BadgeLegend />
       </div>
 

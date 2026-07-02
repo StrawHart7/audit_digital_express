@@ -3,7 +3,6 @@ import { AuditMetrics } from "@/types/audit";
 const PAGESPEED_ENDPOINT =
   "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
 
-// PageSpeed can take 15-30s on a cold analysis; give it real headroom.
 const TIMEOUT_MS = 45_000;
 
 interface LighthouseCategoryResult {
@@ -53,35 +52,41 @@ function normalizeUrl(rawUrl: string): string {
 }
 
 /**
- * Fallback for the "mobile-friendly" check. Lighthouse 13 (rolled out to
- * PSI in Oct 2025) reorganized legacy audits and the "viewport" audit is
- * not always present in the response anymore. When that happens, we check
- * the page's HTML directly instead of silently assuming "not mobile-friendly".
+ * Fallback for the "mobile-friendly" check when Lighthouse's own "viewport"
+ * audit is absent (Lighthouse 13 reorganized several legacy audits).
+ * Returns:
+ *   true/false  -> we successfully fetched the page and can confirm
+ *   null        -> couldn't verify (blocked, timeout, non-HTML response) —
+ *                  NEVER assume "false" just because we couldn't check.
  */
-async function detectViewportMetaTag(url: string): Promise<boolean> {
+async function detectViewportMetaTag(url: string): Promise<boolean | null> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(url, {
       signal: controller.signal,
+      redirect: "follow",
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; AuditDigitalExpressBot/1.0; +https://audit-digital-express.example)",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
     });
     clearTimeout(timeoutId);
-    if (!res.ok) return false;
+
+    if (!res.ok) return null; // blocked / challenge page / not accessible to us
+
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("text/html")) return null;
+
     const html = await res.text();
     return /<meta[^>]+name=["']viewport["'][^>]*>/i.test(html);
   } catch {
-    return false;
+    return null; // timeout, network error, anti-bot block, etc. — unknown, not "false"
   }
 }
 
-/**
- * Calls the Google PageSpeed Insights API (strategy=mobile) and extracts
- * exactly the fields the audit report needs.
- */
 export async function runPageSpeedAudit(rawUrl: string): Promise<AuditMetrics> {
   const apiKey = process.env.PAGESPEED_API_KEY;
   if (!apiKey) {
@@ -158,12 +163,12 @@ export async function runPageSpeedAudit(rawUrl: string): Promise<AuditMetrics> {
   const httpsActive = (lighthouse.audits["is-on-https"]?.score ?? 0) === 1;
 
   const viewportScore = lighthouse.audits["viewport"]?.score;
-  const mobileFriendly =
+  const mobileFriendly: boolean | null =
     viewportScore === 1
       ? true
       : viewportScore === 0
       ? false
-      : await detectViewportMetaTag(targetUrl); // audit absent/null -> fallback direct
+      : await detectViewportMetaTag(targetUrl); // audit absent -> try fallback, else "unknown"
 
   const fcpMs = lighthouse.audits["first-contentful-paint"]?.numericValue ?? 0;
   const loadTimeSeconds = fcpMs / 1000;
